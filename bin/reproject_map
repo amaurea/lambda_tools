@@ -38,7 +38,7 @@ except ValueError:
 	ncomp = args.ncomp or 3
 	fields= tuple(range(first,first+ncomp))
 	with printer.time("read healpix %s" % args.input_map, 1):
-		imap   = np.atleast_2d(healpy.read_map(args.input_map, field=fields, hdu=args.hdu or 0))
+		imap   = np.atleast_2d(healpy.read_map(args.input_map, field=fields, hdu=args.hdu or 1))
 	heal   = True
 
 with printer.time("remove bad values", 1):
