@@ -5,13 +5,15 @@ parser = argparse.ArgumentParser()
 parser.add_argument("input_map", help="The input fits file to reproject. Can be a FITS image or a Healpix file.")
 parser.add_argument("template",  help="A fits file with the same shape and world coordinate system as the output.")
 parser.add_argument("output_map",help="The file to write the output to.")
-parser.add_argument("-i", "--first", type=int, default=None, help="The first field to use. Set to value greater than 0 to skip the first fields.")
-parser.add_argument("-n", "--ncomp", type=int, default=None, help="The number of fields to use. By default all are read for normal maps, and 3 are read for healpix maps. If 3 fields are read, they are assumed to be the T,Q,U stokes parameters.")
-parser.add_argument("-H", "--hdu",   type=int, default=None, help="The HDU to read the map from. 0 by default.")
-parser.add_argument("-r", "--rot",   type=str, default=None, help="Coordinate transformation to perform while interpolation. By default no rotation is performed. Takes the form isys,osys, where either can be cel, gal or ecl for celestial (equatorial), galactic or ecliptic coordinates respectively. For example -r gal,cel would transform from an input map in galactic coordinates to an output map in equatorial coordinates.")
-parser.add_argument("-O", "--order", type=int, default=3, help="Interpolation order. Defaults to bicubic spline interpolation (3)."),
-parser.add_argument("-v",      action="count", default=1, help="Increase verbosity.")
-parser.add_argument("-q",      action="count", default=0, help="Decrease verbosity.")
+parser.add_argument("-i", "--first", type=int,   default=None, help="The first field to use. Set to value greater than 0 to skip the first fields.")
+parser.add_argument("-n", "--ncomp", type=int,   default=None, help="The number of fields to use. By default all are read for normal maps, and 3 are read for healpix maps. If 3 fields are read, they are assumed to be the T,Q,U stokes parameters.")
+parser.add_argument("-l", "--lmax",  type=int,   default=None, help="Maximum l to use. Defaults to 3*nside.")
+parser.add_argument("-H", "--hdu",   type=int,   default=None, help="The HDU to read the map from. 0 by default.")
+parser.add_argument("-r", "--rot",   type=str,   default=None, help="Coordinate transformation to perform while interpolation. By default no rotation is performed. Takes the form isys,osys, where either can be cel, gal or ecl for celestial (equatorial), galactic or ecliptic coordinates respectively. For example -r gal,cel would transform from an input map in galactic coordinates to an output map in equatorial coordinates.")
+parser.add_argument("-O", "--order", type=int,   default=3, help="Interpolation order. Defaults to bicubic spline interpolation (3)."),
+parser.add_argument("-v",      action="count",   default=1, help="Increase verbosity.")
+parser.add_argument("-q",      action="count",   default=0, help="Decrease verbosity.")
+parser.add_argument("-u", "--unit",  type=float, default=1, help="Unit of input map in units of the output map unit. For example, if your input map is in K but your output should be in uK, pass 1e6.")
 parser.add_argument("--nopol", action="store_true", help="Do not perform any polarization rotation.")
 args = parser.parse_args()
 
@@ -43,6 +45,8 @@ except ValueError:
 
 with printer.time("remove bad values", 1):
 	imap = remove_bad(imap)
+
+imap *= args.unit
 
 # Ok, now we know which type we have.
 if not heal:
@@ -82,7 +86,7 @@ else:
 	with printer.time("prepare SHT", 1):
 		pol   = ncomp == 3 and not args.nopol
 		nside = healpy.npix2nside(imap.shape[1])
-		lmax  = 3*nside
+		lmax  = args.lmax or 3*nside
 		minfo = sharp.map_info_healpix(nside)
 		ainfo = sharp.alm_info(lmax)
 		sht   = sharp.sht(minfo, ainfo)
